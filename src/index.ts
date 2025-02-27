@@ -14,7 +14,7 @@ app.get("/", (req: Request, res: Response) => {
 // POST запрос на /pay
 app.post("/pay", (req: Request, res: Response) => {
     const { amount, orderId, user } = req.body;
-    console.log("Получен платёж:", { amount, orderId, user });
+    console.log("Получен платёж:", req.body);
 
     // Ответ для клиента
     res.status(200).json({ message: "Платёж успешно принят" });
