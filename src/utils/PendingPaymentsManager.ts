@@ -2,7 +2,6 @@ import schedule from "node-schedule";
 import { checkPaymentStatusByPaymentId } from "../services/checkPaymentByPaymentId";
 import { logger } from "./logger";
 import db from "../database";
-import pLimit from "p-limit"; // Ограничение запросов
 import { appendSuccessfulPaymentToSheet } from "./writePaymentToSheet";
 
 export interface PendingPayment {
@@ -26,7 +25,6 @@ export interface PendingPayment {
 
 class PendingPaymentsManager {
     private pendingPayments: Map<string, PendingPayment>;
-    private limit = pLimit(5); // Одновременно максимум 5 запросов
 
     constructor() {
         this.pendingPayments = new Map();
@@ -57,7 +55,7 @@ class PendingPaymentsManager {
     }
 
     /**
-     * Планировщик для проверки платежей каждые 1 минуту (ограничение по запросам)
+     * Планировщик для проверки платежей каждые 1 минуту
      */
     private startScheduler(): void {
         schedule.scheduleJob("*/1 * * * *", async () => {
@@ -71,36 +69,22 @@ class PendingPaymentsManager {
 
             logger.info(`🔍 Найдено ${payments.length} платежей на проверку.`);
 
-            const results = await Promise.allSettled(
-                payments.map((payment) =>
-                    this.limit(() =>
-                        checkPaymentStatusByPaymentId(payment.paymentId)
-                    )
-                )
-            );
-
-            for (let index = 0; index < results.length; index++) {
-                const result = results[index];
-                const payment = payments[index];
-
-                if (result.status === "fulfilled") {
-                    const statusData = result.value;
+            // Последовательная проверка платежей с задержкой
+            for (const payment of payments) {
+                try {
+                    const statusData = await checkPaymentStatusByPaymentId(
+                        payment.paymentId
+                    );
 
                     if (statusData === "succeeded") {
-                        try {
-                            logger.info(
-                                `💰 Платёж ${payment.paymentId} подтверждён. Записываем в Google Sheets...`
-                            );
-                            await appendSuccessfulPaymentToSheet(payment);
-                            this.removePayment(payment.paymentId);
-                            logger.info(
-                                `✅ Платёж ${payment.paymentId} успешно записан и удалён.`
-                            );
-                        } catch (err) {
-                            logger.error(
-                                `❌ Ошибка при записи платежа ${payment.paymentId} в Google Sheets: ${err}`
-                            );
-                        }
+                        logger.info(
+                            `💰 Платёж ${payment.paymentId} подтверждён. Записываем в Google Sheets...`
+                        );
+                        await appendSuccessfulPaymentToSheet(payment);
+                        this.removePayment(payment.paymentId);
+                        logger.info(
+                            `✅ Платёж ${payment.paymentId} успешно записан и удалён.`
+                        );
                     } else if (statusData === "canceled") {
                         logger.info(`❌ Платёж ${payment.paymentId} отменён.`);
                         this.removePayment(payment.paymentId);
@@ -113,11 +97,14 @@ class PendingPaymentsManager {
                             `⚠️ Неизвестный статус платежа ${payment.paymentId}: ${statusData}`
                         );
                     }
-                } else {
+                } catch (err) {
                     logger.error(
-                        `❌ Ошибка при проверке платежа ${payment.paymentId}: ${result.reason}`
+                        `❌ Ошибка при проверке платежа ${payment.paymentId}: ${err}`
                     );
                 }
+
+                // Задержка перед следующим запросом (1 секунда)
+                await new Promise((resolve) => setTimeout(resolve, 1000));
             }
 
             logger.info("✅ Проверка платежей завершена.");

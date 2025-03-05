@@ -17,11 +17,9 @@ const node_schedule_1 = __importDefault(require("node-schedule"));
 const checkPaymentByPaymentId_1 = require("../services/checkPaymentByPaymentId");
 const logger_1 = require("./logger");
 const database_1 = __importDefault(require("../database"));
-const p_limit_1 = __importDefault(require("p-limit")); // Ограничение запросов
 const writePaymentToSheet_1 = require("./writePaymentToSheet");
 class PendingPaymentsManager {
     constructor() {
-        this.limit = (0, p_limit_1.default)(5); // Одновременно максимум 5 запросов
         this.pendingPayments = new Map();
         this.loadPaymentsFromDB();
         this.startScheduler();
@@ -48,7 +46,7 @@ class PendingPaymentsManager {
         logger_1.logger.info(`🔄 Загружено ${rows.length} платежей из БД.`);
     }
     /**
-     * Планировщик для проверки платежей каждые 1 минуту (ограничение по запросам)
+     * Планировщик для проверки платежей каждые 1 минуту
      */
     startScheduler() {
         node_schedule_1.default.scheduleJob("*/1 * * * *", () => __awaiter(this, void 0, void 0, function* () {
@@ -59,22 +57,15 @@ class PendingPaymentsManager {
                 return;
             }
             logger_1.logger.info(`🔍 Найдено ${payments.length} платежей на проверку.`);
-            const results = yield Promise.allSettled(payments.map((payment) => this.limit(() => (0, checkPaymentByPaymentId_1.checkPaymentStatusByPaymentId)(payment.paymentId))));
-            for (let index = 0; index < results.length; index++) {
-                const result = results[index];
-                const payment = payments[index];
-                if (result.status === "fulfilled") {
-                    const statusData = result.value;
+            // Последовательная проверка платежей с задержкой
+            for (const payment of payments) {
+                try {
+                    const statusData = yield (0, checkPaymentByPaymentId_1.checkPaymentStatusByPaymentId)(payment.paymentId);
                     if (statusData === "succeeded") {
-                        try {
-                            logger_1.logger.info(`💰 Платёж ${payment.paymentId} подтверждён. Записываем в Google Sheets...`);
-                            yield (0, writePaymentToSheet_1.appendSuccessfulPaymentToSheet)(payment);
-                            this.removePayment(payment.paymentId);
-                            logger_1.logger.info(`✅ Платёж ${payment.paymentId} успешно записан и удалён.`);
-                        }
-                        catch (err) {
-                            logger_1.logger.error(`❌ Ошибка при записи платежа ${payment.paymentId} в Google Sheets: ${err}`);
-                        }
+                        logger_1.logger.info(`💰 Платёж ${payment.paymentId} подтверждён. Записываем в Google Sheets...`);
+                        yield (0, writePaymentToSheet_1.appendSuccessfulPaymentToSheet)(payment);
+                        this.removePayment(payment.paymentId);
+                        logger_1.logger.info(`✅ Платёж ${payment.paymentId} успешно записан и удалён.`);
                     }
                     else if (statusData === "canceled") {
                         logger_1.logger.info(`❌ Платёж ${payment.paymentId} отменён.`);
@@ -87,9 +78,11 @@ class PendingPaymentsManager {
                         logger_1.logger.error(`⚠️ Неизвестный статус платежа ${payment.paymentId}: ${statusData}`);
                     }
                 }
-                else {
-                    logger_1.logger.error(`❌ Ошибка при проверке платежа ${payment.paymentId}: ${result.reason}`);
+                catch (err) {
+                    logger_1.logger.error(`❌ Ошибка при проверке платежа ${payment.paymentId}: ${err}`);
                 }
+                // Задержка перед следующим запросом (1 секунда)
+                yield new Promise((resolve) => setTimeout(resolve, 1000));
             }
             logger_1.logger.info("✅ Проверка платежей завершена.");
         }));
