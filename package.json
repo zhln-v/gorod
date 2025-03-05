@@ -3,7 +3,8 @@
     "version": "1.0.0",
     "main": "index.js",
     "scripts": {
-        "start": "npx ts-node src/index.ts",
+        "start": "npx node-ts src/index.ts",
+        "inspector": "node --inspect -r ts-node/register src/index.ts",
         "dev": "nodemon --watch src --exec ts-node src/index.ts"
     },
     "keywords": [],
@@ -15,6 +16,8 @@
         "better-sqlite3": "^11.8.1",
         "cors": "^2.8.5",
         "express": "^4.21.2",
+        "google-auth-library": "^9.15.1",
+        "google-spreadsheet": "^4.1.4",
         "googleapis": "^146.0.0",
         "node-schedule": "^2.1.1",
         "p-limit": "^6.2.0",

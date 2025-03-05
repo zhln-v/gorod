@@ -30,6 +30,11 @@ app.use("/checkPayment", checkPayment);
 
 // app.use("/sendOrderData", );
 
+setInterval(() => {
+    const memory = process.memoryUsage();
+    console.log(`Heap used: ${Math.round(memory.heapUsed / 1024 / 1024)} MB`);
+}, 1000); // каждые 5 секунд
+
 app.listen(PORT, () => {
     logger.info(`⚡️[server]: Server is running at http://localhost:${PORT}`);
 });

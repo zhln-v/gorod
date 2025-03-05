@@ -13,6 +13,11 @@ const YOOKASSA_API_URL = process.env["YOOKASSA_API_URL"] || "";
 const SHOP_ID: string = process.env["TEST-SHOP_ID"] || "";
 const API_KEY: string = process.env["TEST-API_KEY"] || "";
 
+const GOOGLE_SERVICE_ACCOUNT_EMAIL =
+    process.env["GOOGLE_SERVICE_ACCOUNT_EMAIL"] || "";
+const GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY =
+    process.env["GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY"] || "";
+
 // const SHOP_ID: string = process.env["SHOP_ID"] || "";
 // const API_KEY: string = process.env["API_KEY"] || "";
 
@@ -55,4 +60,6 @@ export const config = {
     GOOGLE_SERVICE_ACCOUNT_KEY_FILE,
     GOOGLE_SHEET_ID,
     GOOGLE_SHEET_NAME,
+    GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
 };

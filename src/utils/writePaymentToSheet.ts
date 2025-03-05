@@ -1,66 +1,70 @@
-import { google } from "googleapis";
+import { GoogleSpreadsheet } from "google-spreadsheet";
+import { JWT } from "google-auth-library";
 import { config } from "../config";
 import { PendingPayment } from "./PendingPaymentsManager";
 
 /**
- * Добавляет успешный платеж в Google Sheets.
- *
- * Функция использует сервисный аккаунт для доступа к Google Sheets API и добавляет новую строку с данными платежа.
- *
- * @param {PendingPayment} payment - Объект успешного платежа.
- * @returns {Promise<any>} - Результат операции записи в Google Sheets.
- *
+ * Авторизация и создание экземпляра Google Spreadsheet
+ */
+async function getSheetsClient(): Promise<GoogleSpreadsheet> {
+    const auth = new JWT({
+        email: config.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        key: config.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.replace(/\\n/g, "\n"),
+        scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+    });
+
+    const doc = new GoogleSpreadsheet(config.GOOGLE_SHEET_ID, auth);
+    await doc.loadInfo(); // Загружаем информацию о таблице
+    return doc;
+}
+
+/**
+ * Записывает успешный платеж в Google Sheets.
  */
 export async function appendSuccessfulPaymentToSheet(
     payment: PendingPayment
-): Promise<any> {
+): Promise<void> {
     try {
-        const auth = new google.auth.GoogleAuth({
-            keyFile: config.GOOGLE_SERVICE_ACCOUNT_KEY_FILE,
-            scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-        });
+        const doc = await getSheetsClient();
+        const sheet = doc.sheetsByTitle["Оплаченные"];
+        if (!sheet) throw new Error('❌ Лист "Оплаченные" не найден');
 
-        const sheets = google.sheets({ version: "v4", auth });
-        const spreadsheetId = config.GOOGLE_SHEET_ID;
-        const sheetName = "Оплаченные";
-        // Используем диапазон без оборачивания имени листа в кавычки, если имя не содержит пробелов или спецсимволов
-        const range = `${sheetName}!A1`;
+        // Загружаем заголовки
+        await sheet.loadHeaderRow();
+        const headers = sheet.headerValues;
 
-        // Если номер телефона начинается с плюса, добавляем апостроф, чтобы Sheets воспринимал его как текст
-        const phoneValue =
-            payment.date.phone && payment.date.phone.startsWith("+")
-                ? "'" + payment.date.phone
-                : String(payment.date.phone || "");
-
+        // Обрабатываем данные перед записью
+        const phoneValue = payment.date.phone.startsWith("+")
+            ? `'${payment.date.phone}`
+            : payment.date.phone;
         const birthDateValue = payment.date.birth_date
-            ? `'${payment.date.birth_date}'` // Добавляем апостроф перед датой
+            ? `'${payment.date.birth_date}`
             : "";
 
-        const row = [
-            `${payment.paymentId}\n${payment.productId}`,
-            `${payment.productTitle}\n${payment.productDescription}`,
-            `${payment.amount} ${payment.currency}`,
-            payment.date.parent_name || "",
-            payment.date.email || "",
-            phoneValue,
-            payment.date.child_name || "",
-            birthDateValue,
-            payment.date.snils || "",
-        ];
+        // Объект с названиями колонок, которые у тебя есть
+        const rowData: Record<string, string> = {
+            "ID платежа & ID товара/услуги": `${payment.paymentId}\n${payment.productId}`,
+            "Название & Описание товара/услуги": `${payment.productTitle}\n${payment.productDescription}`,
+            "Сумма оплаты": `${payment.amount} ${payment.currency}`,
+            "ФИО родителя": payment.date.parent_name || "",
+            Email: payment.date.email || "",
+            Телефон: phoneValue,
+            "ФИО ребёнка": payment.date.child_name || "",
+            "Дата рождения": birthDateValue,
+            СНИЛС: payment.date.snils || "",
+        };
 
-        const result = await sheets.spreadsheets.values.append({
-            spreadsheetId,
-            range,
-            valueInputOption: "USER_ENTERED",
-            insertDataOption: "INSERT_ROWS",
-            requestBody: {
-                values: [row],
-            },
-        });
+        // Фильтруем только те поля, которые есть в Google Sheets
+        const filteredRow = Object.fromEntries(
+            Object.entries(rowData).filter(([key]) => headers.includes(key))
+        );
 
-        return result.data;
+        // Добавляем строку в таблицу
+        await sheet.addRow(filteredRow);
+
+        console.log(`✅ Платёж ${payment.paymentId} записан в Google Sheets.`);
     } catch (error) {
-        console.error("Ошибка при записи платежа в Google Sheets:", error);
+        console.error("❌ Ошибка при записи в Google Sheets:", error);
         throw error;
     }
 }
