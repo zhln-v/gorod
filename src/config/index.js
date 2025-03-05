@@ -1,0 +1,52 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.config = void 0;
+const logger_1 = require("../utils/logger");
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
+const PORT = Number(process.env.PORT) || 3000;
+const BASE_URL = process.env["BASE_URL"] || "";
+const REDIRECT_URL = process.env["REDIRECT_URL"] || "";
+const YOOKASSA_API_URL = process.env["YOOKASSA_API_URL"] || "";
+const SHOP_ID = process.env["TEST-SHOP_ID"] || "";
+const API_KEY = process.env["TEST-API_KEY"] || "";
+const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env["GOOGLE_SERVICE_ACCOUNT_EMAIL"] || "";
+const GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY = process.env["GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY"] || "";
+// const SHOP_ID: string = process.env["SHOP_ID"] || "";
+// const API_KEY: string = process.env["API_KEY"] || "";
+const TILDA_API_URL = process.env["TILDA_API_URL"] || "";
+const TILDA_PROJECT_ID = process.env["TILDA_PROJECT_ID"] || "";
+const TILDA_REC_ID = process.env["TILDA_REC_ID"] || "";
+const TILDA_STOREPART_UID = process.env["TILDA_STOREPART_UID"] || "";
+const TILDA_API_PUBLIC_KEY = process.env["TILDA_API_PUBLIC_KEY"] || "";
+const TILDA_API_SECRET_KEY = process.env["TILDA_API_SECRET_KEY"] || "";
+const GOOGLE_SERVICE_ACCOUNT_KEY_FILE = process.env["GOOGLE_SERVICE_ACCOUNT_KEY_FILE"] || "";
+const GOOGLE_SHEET_ID = process.env["GOOGLE_SHEET_ID"] || "";
+const GOOGLE_SHEET_NAME = process.env["GOOGLE_SHEET_NAME"] || "";
+// Проверяем, заданы ли все переменные окружения
+if (!YOOKASSA_API_URL || !SHOP_ID || !API_KEY || !BASE_URL) {
+    console.error("Не заданы переменные окружения YOOKASSA_API_URL, SHOP_ID, API_KEY или REDIRECT_URL");
+    logger_1.logger.error("Не заданы переменные окружения YOOKASSA_API_URL, SHOP_ID, API_KEY или REDIRECT_URL");
+}
+exports.config = {
+    PORT,
+    YOOKASSA_API_URL,
+    BASE_URL,
+    SHOP_ID,
+    API_KEY,
+    TILDA_API_URL,
+    TILDA_PROJECT_ID,
+    TILDA_API_PUBLIC_KEY,
+    TILDA_API_SECRET_KEY,
+    TILDA_REC_ID,
+    TILDA_STOREPART_UID,
+    REDIRECT_URL,
+    GOOGLE_SERVICE_ACCOUNT_KEY_FILE,
+    GOOGLE_SHEET_ID,
+    GOOGLE_SHEET_NAME,
+    GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
+};
