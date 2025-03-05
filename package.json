@@ -3,9 +3,9 @@
     "version": "1.0.0",
     "main": "index.js",
     "scripts": {
-        "start": "npx node-ts src/index.ts",
-        "inspector": "node --inspect -r ts-node/register src/index.ts",
-        "dev": "nodemon --watch src --exec ts-node src/index.ts"
+        "start": "npx node-ts index.ts",
+        "inspector": "node --inspect -r ts-node/register index.ts",
+        "dev": "nodemon --watch src --exec ts-node index.ts"
     },
     "keywords": [],
     "author": "",

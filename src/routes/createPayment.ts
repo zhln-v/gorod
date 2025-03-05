@@ -31,11 +31,31 @@ router.post("/", async (req: Request, res: Response) => {
             phone,
         });
 
+        // Проверка обязательных полей
         if (!productId) {
             logger.error("❌ Ошибка: отсутствует productId");
             res.status(400).json({
                 status: "error",
                 message: "Не хватает обязательных полей (productId).",
+            });
+        }
+
+        // Проверка номера телефона
+        if (!phone) {
+            logger.error("❌ Ошибка: отсутствует номер телефона");
+            res.status(400).json({
+                status: "error",
+                message: "Номер телефона обязателен.",
+            });
+        }
+
+        // Проверка почты на соответствие формату
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email || !emailRegex.test(email)) {
+            logger.error("❌ Ошибка: указан некорректный формат почты");
+            res.status(400).json({
+                status: "error",
+                message: "Указан некорректный формат почты.",
             });
         }
 
@@ -60,7 +80,7 @@ router.post("/", async (req: Request, res: Response) => {
             });
         }
 
-        // Получаем и проверяем цену
+        // Проверяем цену товара
         const originalPrice = parseFloat(productInfo.price);
         if (isNaN(originalPrice) || originalPrice <= 0) {
             logger.error(
@@ -72,7 +92,6 @@ router.post("/", async (req: Request, res: Response) => {
             });
         }
 
-        // Формируем название и описание платежа
         const title = productInfo.title || "Товар";
         const fullDescription = title;
 
@@ -82,7 +101,6 @@ router.post("/", async (req: Request, res: Response) => {
             price: originalPrice,
         });
 
-        // Используем проверенную цену
         const amountValue = originalPrice;
 
         let parsedReceipt: any;
@@ -97,7 +115,6 @@ router.post("/", async (req: Request, res: Response) => {
 
         const idempotenceKey = uuidv4();
 
-        // Формируем данные для платежа через YooKassa
         const paymentData: any = {
             amount: {
                 value: amountValue,
@@ -133,7 +150,6 @@ router.post("/", async (req: Request, res: Response) => {
             paymentData,
         });
 
-        // Создаем платеж через YooKassa
         const responseYk = await axios.post(
             config.YOOKASSA_API_URL,
             paymentData,
@@ -154,7 +170,6 @@ router.post("/", async (req: Request, res: Response) => {
             `✅ Платёж успешно создан, ссылка на оплату: ${paymentUrl}`
         );
 
-        // Добавляем платеж в менеджер отложенных платежей
         pendingPaymentsManager.addPayment({
             productId: productId,
             productTitle: title,
@@ -178,7 +193,6 @@ router.post("/", async (req: Request, res: Response) => {
             `✅ Платёж ${responseYk.data.id} добавлен в очередь на проверку`
         );
 
-        // Отправляем клиенту ссылку на оплату и успешный статус
         res.json({
             status: "success",
             redirect: paymentUrl,

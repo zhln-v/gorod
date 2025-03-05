@@ -1,3 +1,6 @@
 {"level":"error","message":"⚠️ Неизвестный статус платежа 2f59c8ae-000f-5000-b000-1d10ce26ac0b: error","timestamp":"2025-03-05T02:42:01.724Z"}
 {"level":"error","message":"⚠️ Неизвестный статус платежа 2f59ca2f-000f-5000-b000-1bc105c05638: error","timestamp":"2025-03-05T02:42:01.724Z"}
 {"code":"invalid_request","description":"Payment method is not available","id":"0195642f-c61b-70fa-8f68-42653632e40b","level":"error","message":"❌ Ошибка при создании платежа:","timestamp":"2025-03-05T02:43:27.736Z","type":"error"}
+{"level":"error","message":"Ошибка перезапуска сервера: /bin/sh: pm2: command not found\n","timestamp":"2025-03-05T22:12:38.827Z"}
+{"level":"error","message":"Ошибка перезапуска сервера: /bin/sh: pm2: command not found\n","timestamp":"2025-03-05T22:14:59.814Z"}
+{"level":"error","message":"Не заданы переменные окружения YOOKASSA_API_URL, SHOP_ID, API_KEY или REDIRECT_URL","timestamp":"2025-03-05T22:27:41.608Z"}

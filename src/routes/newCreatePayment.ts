@@ -84,21 +84,15 @@ router.post("/", async (req: Request, res: Response) => {
         }
         const totalValue = (unitPrice * quantity).toFixed(2);
         logger.info("💰 Итоговая сумма платежа:", totalValue);
+
         // Очистка tru_code: убираем пробелы и оставляем только цифры и точку
         const truCodeRaw =
             characteristics.find((c: any) => c.title === "truCode")?.value ||
             "";
-
-        // 1. Проверяем наличие точки, если есть — делим на две части
         let [beforeDot, afterDot = ""] = truCodeRaw.split(".");
-
-        // 2. Делаем так, чтобы после точки было ровно 20 символов
         afterDot = afterDot.padEnd(20, "0").slice(0, 20);
-
-        // 3. Собираем обратно в нужный формат
         const truCode = `${beforeDot}.${afterDot}`;
 
-        // 4. Проверяем корректность (длина перед точкой не фиксирована, после точки 20 символов)
         if (!/^\d+\.\d{20}$/.test(truCode)) {
             logger.error("❌ Ошибка: truCode некорректного формата", {
                 truCode,
@@ -111,7 +105,7 @@ router.post("/", async (req: Request, res: Response) => {
 
         logger.info("🛠 truCode перед отправкой в YooKassa:", { truCode });
 
-        // Извлекаем данные формы
+        // Извлекаем данные формы клиента
         const { parentName, childName, birthDate, snils, email, phone } =
             req.body;
         logger.info("📜 Данные клиента:", {
@@ -122,6 +116,30 @@ router.post("/", async (req: Request, res: Response) => {
             birthDate,
             snils,
         });
+
+        // Проверка обязательных полей клиента на непустоту
+        if (
+            !parentName ||
+            !email ||
+            !phone ||
+            !childName ||
+            !birthDate ||
+            !snils
+        ) {
+            logger.error("❌ Ошибка: отсутствуют обязательные поля клиента", {
+                parentName,
+                email,
+                phone,
+                childName,
+                birthDate,
+                snils,
+            });
+            res.status(400).json({
+                status: "error",
+                message:
+                    "Обязательные поля клиента (parentName, email, phone, childName, birthDate, snils) не могут быть пустыми.",
+            });
+        }
 
         let parsedReceipt: any;
         if (Receipt) {
@@ -139,7 +157,7 @@ router.post("/", async (req: Request, res: Response) => {
         const articles = [
             {
                 article_number: 1,
-                tru_code: truCode, // Исправлено (убран .toFixed(20))
+                tru_code: truCode,
                 article_code: productInfo.uid.toString(),
                 article_name: articleName,
                 quantity: quantity,
