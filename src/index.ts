@@ -1,26 +1,35 @@
-import express, { Request, Response } from "express";
+import express from "express";
+import cors from "cors";
+
+import { createPayment } from "./routes/createPayment";
+// import { createPayment } from "./routes/newCreatePayment"; // Оплата сертификатом
+
+import { checkPayment } from "./routes/checkPayment";
+import { pendingPaymentsManager } from "./utils/PendingPaymentsManager";
+import { config } from "./config";
+import { logger } from "./utils/logger";
 
 const app = express();
-const PORT = 3000;
+const PORT: number = Number(config.PORT) || 3000;
 
-// Middleware для парсинга JSON
-app.use(express.json());
+pendingPaymentsManager;
 
-// GET запрос на главную страницу
-app.get("/", (req: Request, res: Response) => {
-    res.send("Server is running!");
-});
+app.use(express.json()); // парсит application/json
+app.use(express.urlencoded({ extended: true })); // парсит application/x-www-form-urlencoded
+app.use(cors());
 
-// POST запрос на /pay
-app.post("/pay", (req: Request, res: Response) => {
-    const { amount, orderId, user } = req.body;
-    console.log("Получен платёж:", req.body);
+// Роуты
+app.use("/createPayment", createPayment); // Создаём платёж
 
-    // Ответ для клиента
-    res.status(200).json({ message: "Платёж успешно принят" });
-});
+/**
+ * Принимает параметры orderId
+ * Проверяет статус платёжа в том случае, если пользователь переходит по ссылке после оплаты
+ * Платёж проверяется по uuid
+ */
+app.use("/checkPayment", checkPayment);
 
-// Запуск сервера
+// app.use("/sendOrderData", );
+
 app.listen(PORT, () => {
-    console.log(`Server is running at http://localhost:${PORT}`);
+    logger.info(`⚡️[server]: Server is running at http://localhost:${PORT}`);
 });
