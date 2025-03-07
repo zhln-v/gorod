@@ -163,7 +163,7 @@ router.post("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             },
             confirmation: {
                 type: "redirect",
-                return_url: `${config_1.config.BASE_URL}/success?productId=${productId}`,
+                return_url: `https://xn---56-6cdjehbj0gaxsnb.xn--p1ai/`,
             },
             capture: true,
             description: `Оплата заказа: ${productInfo.title}`,

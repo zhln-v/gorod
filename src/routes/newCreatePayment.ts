@@ -182,7 +182,7 @@ router.post("/", async (req: Request, res: Response) => {
             },
             confirmation: {
                 type: "redirect",
-                return_url: `${config.BASE_URL}/success?productId=${productId}`,
+                return_url: `https://xn---56-6cdjehbj0gaxsnb.xn--p1ai/`,
             },
             capture: true,
             description: `Оплата заказа: ${productInfo.title}`,
